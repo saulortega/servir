@@ -24,7 +24,7 @@ type Manejador struct {
 }
 
 type Recurso interface {
-	dir() string
+	dirección() string
 	Obtener(r *http.Request, i string) (Recurso, int, error)
 	Listar(r *http.Request) ([]Recurso, int64, int, error)
 	Crear(r *http.Request) (string, int, error)
@@ -237,11 +237,11 @@ func (M *Manejador) Receptor(w http.ResponseWriter, r *http.Request) {
 }
 
 func (M *Manejador) Recurso(R Recurso) {
-	if len(R.dir()) <= 1 {
+	if len(R.dirección()) <= 1 {
 		return
 	}
 
-	M.Recursos[R.dir()] = R
+	M.Recursos[R.dirección()] = R
 }
 
 func (M *Manejador) buscarRecursoConIdentificador(r *http.Request) (Recurso, string) {
