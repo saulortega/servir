@@ -9,8 +9,8 @@ import (
 
 type Recurso interface {
 	Obtener(r *http.Request, parámetros map[string]string) (Recurso, int, error)
-	Listar(r *http.Request) ([]Recurso, int64, int, error)
-	Crear(r *http.Request) (string, int, error)
+	Listar(r *http.Request, parámetros map[string]string) ([]Recurso, int64, int, error)
+	Crear(r *http.Request, parámetros map[string]string) (string, int, error)
 	Editar(r *http.Request, parámetros map[string]string) (int, error)
 	Eliminar(r *http.Request, parámetros map[string]string) (int, error)
 }
@@ -21,19 +21,22 @@ type recurso struct {
 }
 
 func (R *recurso) manejador(w http.ResponseWriter, r *http.Request) {
+	var coincide, tipo = R.dirección.coincide(r.URL.Path)
+	if !coincide {
+		// Esto no debería ocurrir
+		log.Println("Manejando un recurso cuya dirección no coincide. [1]")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	var parámetros = R.dirección.parámetros(r.URL.Path)
+
 	// Listar u obtener recursos
 	if r.Method == http.MethodGet {
-		var coincide, tipo = R.dirección.coincide(r.URL.Path)
-		if !coincide {
-			// Esto no debería ocurrir
-			log.Println("Manejando un recurso cuya dirección no coincide. [1]")
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
 
 		if tipo == "singular" {
 
-			Obj, cod, err := R.Obtener(r, R.dirección.parámetros(r.URL.Path))
+			Obj, cod, err := R.Obtener(r, parámetros)
 			if err != nil {
 				// Pendiente notificación......
 				w.WriteHeader(cod)
@@ -54,7 +57,7 @@ func (R *recurso) manejador(w http.ResponseWriter, r *http.Request) {
 
 		} else if tipo == "plural" {
 
-			Objs, Ttl, cod, err := R.Listar(r)
+			Objs, Ttl, cod, err := R.Listar(r, parámetros)
 			if err != nil {
 				// Pendiente notificación......
 				w.WriteHeader(cod)
@@ -91,7 +94,12 @@ func (R *recurso) manejador(w http.ResponseWriter, r *http.Request) {
 
 	// Crear recurso
 	if r.Method == http.MethodPost {
-		iden, cod, err := R.Crear(r)
+		if tipo != "plural" {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		iden, cod, err := R.Crear(r, parámetros)
 		if err != nil {
 			// Pendiente notificación......
 			w.WriteHeader(cod)
@@ -105,7 +113,12 @@ func (R *recurso) manejador(w http.ResponseWriter, r *http.Request) {
 
 	// Editar recurso
 	if r.Method == http.MethodPut {
-		cod, err := R.Editar(r, R.dirección.parámetros(r.URL.Path))
+		if tipo != "singular" {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		cod, err := R.Editar(r, parámetros)
 		if err != nil {
 			// Pendiente notificación......
 			w.WriteHeader(cod)
@@ -118,7 +131,12 @@ func (R *recurso) manejador(w http.ResponseWriter, r *http.Request) {
 
 	// Eliminar recurso
 	if r.Method == http.MethodDelete {
-		cod, err := R.Eliminar(r, R.dirección.parámetros(r.URL.Path))
+		if tipo != "singular" {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		cod, err := R.Eliminar(r, parámetros)
 		if err != nil {
 			// Pendiente notificación......
 			w.WriteHeader(cod)

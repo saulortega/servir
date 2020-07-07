@@ -18,7 +18,7 @@ func varExpDir(dir string) ([]string, string) {
 		}
 
 		partes2 := strings.Split(p1, "}")
-		if len(partes2) != 2 {
+		if len(partes2) != 2 || len(partes2[0]) == 0 {
 			panic("Parámetro de recurso mal formateado: " + p1)
 		}
 
@@ -26,7 +26,7 @@ func varExpDir(dir string) ([]string, string) {
 		porciones = append(porciones, regexp.QuoteMeta(partes2[1]))
 	}
 
-	var exp = "^" + strings.Join(porciones, "(.*?)") + "$"
+	var exp = "^" + strings.Join(porciones, "([^/]*?)") + "$"
 
 	return variables, exp
 }
