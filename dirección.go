@@ -10,7 +10,6 @@ type dirección struct {
 	variables        []string
 	expPlural        *regexp.Regexp
 	expSingular      *regexp.Regexp
-	expVariables     *regexp.Regexp
 	puedeSerSingular bool
 }
 
@@ -26,9 +25,11 @@ func (D *dirección) inicializar(url string) {
 	D.dir = url
 	D.puedeSerSingular = strings.HasSuffix(url, "}")
 
+	var expVariables *regexp.Regexp
+
 	if D.puedeSerSingular {
 		partesBarra := strings.Split(url, "/")
-		urlPlural := strings.Join(partesBarra[:len(partesBarra)-1], "")
+		urlPlural := strings.Join(partesBarra[:len(partesBarra)-1], "/")
 		if strings.HasSuffix(urlPlural, "}") {
 			panic("La dirección del recurso «" + url + "» no parece cumplir el estándar REST. Use el formato «/usuarios/{usuario}/mensajes/{mensaje}»")
 		}
@@ -38,16 +39,15 @@ func (D *dirección) inicializar(url string) {
 		_, expPlural = varExpDir(urlPlural)
 		D.expSingular = regexp.MustCompile(expSingular)
 		D.expPlural = regexp.MustCompile(expPlural)
-		D.expVariables = D.expSingular
+		expVariables = D.expSingular
 	} else {
 		var expPlural string
 		D.variables, expPlural = varExpDir(url)
 		D.expPlural = regexp.MustCompile(expPlural)
-		D.expVariables = D.expPlural
+		expVariables = D.expPlural
 	}
 
-	var pedazos = D.expVariables.FindStringSubmatch(url)
-	if len(pedazos) != len(D.variables)+1 {
+	if len(expVariables.FindStringSubmatch(url)) != len(D.variables)+1 {
 		panic("La dirección del recurso «" + url + "» no parece tener las variables bien formadas")
 	}
 
@@ -75,8 +75,16 @@ func (D *dirección) coincide(url string) (bool, string) {
 // parámetros obtiene un mapa de parámetros variables en la dirección URL
 func (D *dirección) parámetros(url string) map[string]string {
 	var parámetros = map[string]string{}
+	var pedazos = []string{}
 
-	var pedazos = D.expVariables.FindStringSubmatch(url)
+	if D.puedeSerSingular {
+		pedazos = D.expSingular.FindStringSubmatch(url)
+	}
+
+	if len(pedazos) == 0 {
+		pedazos = D.expPlural.FindStringSubmatch(url)
+	}
+
 	for i, p := range pedazos {
 		if i == 0 {
 			continue
