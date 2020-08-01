@@ -1,6 +1,7 @@
 package servir
 
 import (
+	"log"
 	"net/http"
 	//"github.com/saulortega/utilidades/notificación"
 )
@@ -8,11 +9,17 @@ import (
 type Manejador struct {
 	recursos     []recurso
 	Autenticador Autenticador
+	Interceptor  Interceptor
 }
 
 func manejador() *Manejador {
 	var m = new(Manejador)
 	m.recursos = []recurso{}
+
+	m.Interceptor = func(w http.ResponseWriter, r *http.Request) error {
+		return nil
+	}
+
 	m.Autenticador = func(*http.Request) (bool, string, int) {
 		return false, "No autorizado.", http.StatusUnauthorized
 	}
@@ -25,13 +32,16 @@ func NuevoManejador() *Manejador {
 }
 
 func (M *Manejador) Receptor(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "Origin, Authorization, X-Requested-With, Content-Type, Accept")
 	w.Header().Set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE")
 	w.Header().Add("Access-Control-Expose-Headers", "X-Identificador")
 	w.Header().Add("Access-Control-Expose-Headers", "X-Total")
 	w.Header().Add("Access-Control-Expose-Headers", "X-Notificaciones")
-	//w.Header().Add("Access-Control-Expose-Headers", "X-Token")
+
+	var err = M.Interceptor(w, r)
+	if err != nil {
+		return
+	}
 
 	// Responder Options
 	if r.Method == http.MethodOptions {
@@ -57,6 +67,17 @@ func (M *Manejador) Receptor(w http.ResponseWriter, r *http.Request) {
 		}
 
 		w.WriteHeader(cod)
+		return
+	}
+
+	err = r.ParseMultipartForm(32 << 20)
+	if err == http.ErrNotMultipart {
+		err = r.ParseForm()
+	}
+	if err != nil {
+		// Pendiente agregar respuesta en encabezado...
+		log.Println("[57320]", err)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
