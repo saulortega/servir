@@ -34,9 +34,10 @@ func NuevoManejador() *Manejador {
 func (M *Manejador) Receptor(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Headers", "Origin, Authorization, X-Requested-With, Content-Type, Accept")
 	w.Header().Set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE")
+	w.Header().Add("Access-Control-Expose-Headers", "X-Notificaciones")
 	w.Header().Add("Access-Control-Expose-Headers", "X-Identificador")
 	w.Header().Add("Access-Control-Expose-Headers", "X-Total")
-	w.Header().Add("Access-Control-Expose-Headers", "X-Notificaciones")
+	w.Header().Add("Access-Control-Expose-Headers", "X-Error")
 
 	var err = M.Interceptor(w, r)
 	if err != nil {
@@ -63,7 +64,7 @@ func (M *Manejador) Receptor(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if msj != "" {
-			w.Header().Set("X-Notificaciones", msj)
+			w.Header().Set("X-Error", msj)
 		}
 
 		w.WriteHeader(cod)
@@ -75,8 +76,8 @@ func (M *Manejador) Receptor(w http.ResponseWriter, r *http.Request) {
 		err = r.ParseForm()
 	}
 	if err != nil {
-		// Pendiente agregar respuesta en encabezado...
-		log.Println("[57320]", err)
+		log.Println("[5323] Error al ejecutar ParseMultipartForm:", err)
+		w.Header().Set("X-Error", "[5323] Ocurrió un error.")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

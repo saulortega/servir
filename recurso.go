@@ -38,20 +38,28 @@ func (R *recurso) manejador(w http.ResponseWriter, r *http.Request) {
 
 			Obj, cod, err := R.Obtener(r, parámetros)
 			if err != nil {
-				// Pendiente notificación......
+				w.Header().Set("X-Error", err.Error())
+				if cod >= 200 && cod < 300 {
+					cod = 500
+				}
+
 				w.WriteHeader(cod)
 				return
 			}
 
 			ObjJSON, err := json.Marshal(Obj)
 			if err != nil {
-				log.Println("Error codificando a JSON ")
-				//w.Header().Set("X-Notificaciones", notificación.Error("Ocurrió un error. Intente nuevamente.").Base64())
+				log.Println("[5925] Error codificando a JSON:", err)
+				w.Header().Set("X-Error", "[5925] Ocurrió un error.")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 
-			w.WriteHeader(http.StatusOK)
+			if cod <= 0 {
+				cod = http.StatusOK
+			}
+
+			w.WriteHeader(cod)
 			w.Write(ObjJSON)
 			return
 
@@ -59,7 +67,11 @@ func (R *recurso) manejador(w http.ResponseWriter, r *http.Request) {
 
 			Objs, Ttl, cod, err := R.Listar(r, parámetros)
 			if err != nil {
-				// Pendiente notificación......
+				w.Header().Set("X-Error", err.Error())
+				if cod >= 200 && cod < 300 {
+					cod = 500
+				}
+
 				w.WriteHeader(cod)
 				return
 			}
@@ -72,14 +84,18 @@ func (R *recurso) manejador(w http.ResponseWriter, r *http.Request) {
 
 			ObjsJSON, err := json.Marshal(Objs)
 			if err != nil {
-				log.Println("Error codificando a JSON")
-				//w.Header().Set("X-Notificaciones", notificación.Error("Ocurrió un error. Intente nuevamente.").Base64())
+				log.Println("[5926] Error codificando a JSON:", err)
+				w.Header().Set("X-Error", "[5926] Ocurrió un error.")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 
+			if cod <= 0 {
+				cod = http.StatusOK
+			}
+
 			w.Header().Set("X-Total", strconv.FormatInt(Ttl, 10))
-			w.WriteHeader(http.StatusOK)
+			w.WriteHeader(cod)
 			w.Write(ObjsJSON)
 			return
 
@@ -101,13 +117,18 @@ func (R *recurso) manejador(w http.ResponseWriter, r *http.Request) {
 
 		iden, cod, err := R.Crear(r, parámetros)
 		if err != nil {
-			// Pendiente notificación......
-			w.WriteHeader(cod)
-			return
+			w.Header().Set("X-Error", err.Error())
+			if cod >= 200 && cod < 300 {
+				cod = 500
+			}
+		}
+
+		if cod <= 0 {
+			cod = http.StatusCreated
 		}
 
 		w.Header().Set("X-Identificador", iden)
-		w.WriteHeader(http.StatusCreated)
+		w.WriteHeader(cod)
 		return
 	}
 
@@ -120,12 +141,17 @@ func (R *recurso) manejador(w http.ResponseWriter, r *http.Request) {
 
 		cod, err := R.Editar(r, parámetros)
 		if err != nil {
-			// Pendiente notificación......
-			w.WriteHeader(cod)
-			return
+			w.Header().Set("X-Error", err.Error())
+			if cod >= 200 && cod < 300 {
+				cod = 500
+			}
 		}
 
-		w.WriteHeader(http.StatusOK)
+		if cod <= 0 {
+			cod = http.StatusOK
+		}
+
+		w.WriteHeader(cod)
 		return
 	}
 
@@ -138,12 +164,17 @@ func (R *recurso) manejador(w http.ResponseWriter, r *http.Request) {
 
 		cod, err := R.Eliminar(r, parámetros)
 		if err != nil {
-			// Pendiente notificación......
-			w.WriteHeader(cod)
-			return
+			w.Header().Set("X-Error", err.Error())
+			if cod >= 200 && cod < 300 {
+				cod = 500
+			}
 		}
 
-		w.WriteHeader(http.StatusOK)
+		if cod <= 0 {
+			cod = http.StatusOK
+		}
+
+		w.WriteHeader(cod)
 		return
 	}
 
