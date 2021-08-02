@@ -13,6 +13,11 @@ func NuevoEnrutador() *Enrutador {
 	return &Enrutador{}
 }
 
+func (E *Enrutador) OPTIONS(dirección string, manejador func(http.ResponseWriter, *http.Request, map[string]string)) {
+	ruta := nuevaRuta("OPTIONS", dirección, manejador)
+	E.rutas = append(E.rutas, ruta)
+}
+
 func (E *Enrutador) GET(dirección string, manejador func(http.ResponseWriter, *http.Request, map[string]string)) {
 	ruta := nuevaRuta("GET", dirección, manejador)
 	E.rutas = append(E.rutas, ruta)
